@@ -1,0 +1,16 @@
+{
+  "manifest_version": 2,
+
+  "version": "1.1",
+  "name": "Point Plan",
+  "description": "This extension adds extra functionality to pivotal.com",
+  "icons": { },
+  
+  "content_scripts": [
+    {
+      "matches": ["*://www.pivotaltracker.com/*"],
+      "js": ["jquery-2.1.1.js", "jquery.powertip.min.js", "content.js"],
+      "all_frames": true
+    }
+  ]
+}
