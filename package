@@ -1,0 +1,2 @@
+cd src
+zip ../point-plan.zip *

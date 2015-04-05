@@ -3,8 +3,8 @@
 
   "version": "1.1",
   "name": "Point Plan",
-  "description": "This extension adds extra functionality to pivotal.com",
-  "icons": { },
+  "description": "Adds UI tweaks to pivotaltracker.com",
+  "icons": { "128": "bar_chart-128.png" },
   
   "content_scripts": [
     {

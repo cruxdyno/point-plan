@@ -17,7 +17,7 @@ To Do
 
 */
 
-var logDebug = false;
+var logDebug = true;
 var powerTipOptions = { placement: 'w', smartPlacement: true };
 var personColorMap = {};
 function main2() {
@@ -57,9 +57,15 @@ function main2() {
 function displayReleaseTotals(ev, panel) {
 	if (logDebug) {
 		//var evMsg = ev == null ? 'null' : '(relatedNode=' + ev.relatedNode + ',attrChange=' + ev.attrChange + ',attrName=' + ev.attrName + ')';
-		var evMsg = ev == null ? 'null' : '(target.className=' + ev.target.className + ')';
+		var evMsg = 'null';
+		if (ev != null) {
+			evMsg = '(target.className=' + ev.target.className
+			var cur = ev.currentTarget.className;
+			if (cur.length > 30) cur = cur.substring(0, 30);
+			evMsg += ',currentTarget.className=' + cur + ')';
+		}
 		var panelMsg = panel == null ? 'null' : '(id=' + panel.id + ',className=' + panel.className + ')';
-		window.console.log('displayReleaseTotals ev=' + evMsg + ' panel=' + panelMsg);
+		logd('displayReleaseTotals ev=' + evMsg + ' panel=' + panelMsg);
 	}
 	
 	var _panel;
@@ -68,7 +74,10 @@ function displayReleaseTotals(ev, panel) {
 	} else if (ev != null) {
 		// don't process events caused by us
 		//if (ev.relatedNode != null && ev.relatedNode.className === 'sprintSummary') return;
-		if (ev.target != null && ev.target.className === 'sprintSummary') return;
+		if (ev.target != null
+				&& (ev.target.className === 'pointPlanRelease' || ev.target.className === 'pointPlanPanel')) {
+			return;
+		}
 		
 		_panel = $(ev.currentTarget);
 	}
@@ -85,13 +94,14 @@ function displayReleaseTotals(ev, panel) {
 			if (logDebug) window.console.log('found release at ' + i);
 			
 			// display the total points of stories above this release
-			var ee = _e.find('.sprintSummary');
+			var ee = _e.find('.pointPlanRelease');
 			var totalDiv;
 			if (ee.length > 0) {
+				logd('displayReleaseTotals found pointPlanRelease');
 				totalDiv = ee[0];
 			} else {
 				var totalDiv = document.createElement('div');
-				totalDiv.className = 'sprintSummary name';
+				totalDiv.className = 'pointPlanRelease name';
 				totalDiv.style.position = 'relative';
 				totalDiv.style.float = 'right';
 				totalDiv.style.padding = '0px 3px';
@@ -111,7 +121,6 @@ function displayReleaseTotals(ev, panel) {
 		} else {
 			var eClass = e.className;
 			var estimateMatches = eClass.match(/estimate_\d{1,2}/);
-			//window.console.log('e matches=' + estimateMatches);
 			if (estimateMatches != null) {
 				if (estimateMatches.length > 1) {
 					window.console.log('W more than 1 estimate_?? class: ' + estimateMatches);
@@ -121,9 +130,6 @@ function displayReleaseTotals(ev, panel) {
 				releasePoints += points;
 				panelPoints += points;
 				
-				//var owner = _e.find('.owner').text();
-				//addPeoplePoints(releasePeoplePoints, owner, points);
-				//addPeoplePoints(panelPeoplePoints, owner, points);
 				_e.find('.owner').each(function (i, e) {
 					var owner = $(e).text();
 					addPeoplePoints(releasePeoplePoints, owner, points);
@@ -134,16 +140,26 @@ function displayReleaseTotals(ev, panel) {
 		}
 	});
 	
+	//if (!firstDisplay) return;
 	// display the total points of stories in the panel
-	var ee = _panel.find('.panelSummary');
+	// 2015/04/03 pivotal changed to recreating the panel_header/div contents on every change,
+	//   which removed our panel total.  Now, we're adding a relative div to panel_header.
+	//   position:relative; top: -15px; width: 50px
+	var ee = _panel.find('.pointPlanPanel');
 	var totalDiv;
+	var panelMsg = ' _panel=(id=' + _panel.attr('id') + ',class=' + _panel.attr('class') + ')';
+	logd('displayReleaseTotals ee=' + ee + ' ee.length=' + ee.length + ' type(ee)=' + jQuery.type(ee) + panelMsg);
+	ee.each(function (i, e) {
+		logd('displayReleaseTotals ee.each i=' + i + ' e=' + e);
+	});
 	if (ee.length > 0) {
+		logd('displayReleaseTotals found pointPlanPanel');
 		totalDiv = ee[0];
 	} else {
 		var isWorkspace = _panel.find('.workspace_header').length > 0;
 		var elementType = isWorkspace ? 'div' : 'h3';
 		totalDiv = document.createElement(elementType);
-		totalDiv.className = 'panelSummary';
+		totalDiv.className = 'pointPlanPanel';
 		// enable powertip, content comes from data title
 		$(totalDiv).powerTip(powerTipOptions);
 		
@@ -153,11 +169,21 @@ function displayReleaseTotals(ev, panel) {
 			_panel.find('.panel_header').find('.tracker_markup').append(totalDiv);
 			
 		} else {
+			//totalDiv.style.position = 'absolute';
+			//totalDiv.style.right = '0px';
+			//totalDiv.style.padding = '0px 3px';
+			//_panel.find('.controls').after(totalDiv);
+			var controls = _panel.find('.panel_header .controls');
+			//window.console.log('controls.id=' + controls.attr('id') + ' height=' + controls.height() + ' width=' + controls.width());
 			totalDiv.style.position = 'absolute';
-			totalDiv.style.right = '0px';
-			totalDiv.style.padding = '0px 3px';
-			_panel.find('.controls').after(totalDiv);
+			//totalDiv.style.right = controls.width() + 'px';
+			//totalDiv.style.height = controls.height() + 'px';
+			totalDiv.style.right = '0';
+			totalDiv.style.padding = '0 5px';
+			//totalDiv.style.backgroundColor = 'red';
+			_panel.find('.panel_header').prepend(totalDiv);
 		}
+		firstDisplay = false;
 	}
 	var newText = 'Pts: ' + panelPoints;
 	if (totalDiv.innerHTML !== newText) totalDiv.innerHTML = newText;
@@ -165,6 +191,7 @@ function displayReleaseTotals(ev, panel) {
 	var newTip = generatePeoplePointsTooltipContent(panelPeoplePoints);
 	if ($(totalDiv).data('powertip') !== newTip) $(totalDiv).data('powertip', newTip);
 }
+var firstDisplay = true;
 function addPeoplePoints(peoplePoints, person, points) {
 	var oldPoints = peoplePoints[person];
 	if (oldPoints != undefined) {
@@ -230,16 +257,16 @@ function handlePanelModified(ev) {
 			//if (ev.target.id != null) evMsg += '#' + ev.target.id;
 			//if (ev.target.className != '') evMsg += '."' + ev.target.className
 			//	+ '" curTarget.class="' + ev.currentTarget.className + '"';
-			evMsg = 'target=' + elementLog(ev.target);
-			evMsg += ' curTarget=' + elementLog(ev.currentTarget);
+			evMsg = '\n  target=' + elementLog(ev.target);
+			evMsg += '\n  curTarget=' + elementLog(ev.currentTarget);
 			var originalEvent = ev.originalEvent;
 			if (ev.originalEvent.srcElement != null) {
 				//evMsg += ' origEv.srcEl.class="' + ev.originalEvent.srcElement.className + '"';
-				evMsg += ' origEv.srcEl=' + elementLog(ev.originalEvent.srcElement);
+				evMsg += '\n  origEv.srcEl=' + elementLog(ev.originalEvent.srcElement);
 			}
 		}
 		modSerial++;
-		window.console.log('handlePanelModified ' + modSerial + ' ' + evMsg);
+		//window.console.log('handlePanelModified ' + modSerial + ' ' + evMsg);
 	}
 	
 	scheduleUpdate(ev);
@@ -272,6 +299,10 @@ function updateTotals(ev) {
 	window.console.log('updateTotals ' + new Date() + ' ev=' + ev);
 }
 
+function logd(msg) {
+	if (logDebug) window.console.log('D ' + msg);
+}
+
 //main();
 // TODO listen for onload event, check document.readyState first
 //setTimeout(main, 2000);
@@ -282,6 +313,7 @@ $(document).ready(function() {
 	//if (originalLoad) originalLoad();
 	setTimeout(main2, 4000);
 	
+	/*
 	var countDiv = document.createElement('div');
 	countDiv.id = 'sprintSummary';
 	countDiv.innerText = 'load ext';
@@ -292,4 +324,5 @@ $(document).ready(function() {
 	countDiv.style.background = 'white';
 	//document.body.appendChild(countDiv);
 	$(countDiv).click(main2);
+	*/
 });
