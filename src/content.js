@@ -17,7 +17,7 @@ To Do
 
 */
 
-var logDebug = true;
+var logDebug = false;
 var powerTipOptions = { placement: 'w', smartPlacement: true };
 var personColorMap = {};
 function main2() {
@@ -91,13 +91,13 @@ function displayReleaseTotals(ev, panel) {
 	panelItems.each(function (i, e) {
 		var _e = $(e);
 		if (_e.hasClass('release')) {
-			if (logDebug) window.console.log('found release at ' + i);
+			//logd('displayReleaseTotals found release at ' + i);
 			
 			// display the total points of stories above this release
 			var ee = _e.find('.pointPlanRelease');
 			var totalDiv;
 			if (ee.length > 0) {
-				logd('displayReleaseTotals found pointPlanRelease');
+				//logd('displayReleaseTotals found pointPlanRelease');
 				totalDiv = ee[0];
 			} else {
 				var totalDiv = document.createElement('div');
@@ -147,13 +147,8 @@ function displayReleaseTotals(ev, panel) {
 	//   position:relative; top: -15px; width: 50px
 	var ee = _panel.find('.pointPlanPanel');
 	var totalDiv;
-	var panelMsg = ' _panel=(id=' + _panel.attr('id') + ',class=' + _panel.attr('class') + ')';
-	logd('displayReleaseTotals ee=' + ee + ' ee.length=' + ee.length + ' type(ee)=' + jQuery.type(ee) + panelMsg);
-	ee.each(function (i, e) {
-		logd('displayReleaseTotals ee.each i=' + i + ' e=' + e);
-	});
 	if (ee.length > 0) {
-		logd('displayReleaseTotals found pointPlanPanel');
+		//logd('displayReleaseTotals found pointPlanPanel');
 		totalDiv = ee[0];
 	} else {
 		var isWorkspace = _panel.find('.workspace_header').length > 0;
@@ -280,20 +275,23 @@ function elementLog(el) {
 	}
 	return msg;
 }
-var timeoutId = -1;
+var timeoutIds = {};
 function scheduleUpdate(ev) {
 	//window.console.log('scheduleUpdate ' + new Date());
+	var timeoutKey = ev.currentTarget.className;
+	logd('scheduleUpdate curTarget.className=' + timeoutKey + ' timeoutId=' + timeoutIds[timeoutKey]);
 	// cancel existing timeout
-	if (timeoutId != -1) {
-		clearTimeout(timeoutId);
-		timeoutId = -1;
+	if (timeoutIds[timeoutKey] != undefined) {
+		clearTimeout(timeoutIds[timeoutKey]);
+		delete timeoutIds[timeoutKey];
 	}
 	// update totals after changes quiet down
 	//timeoutId = setTimeout(updateTotals, 300);
-	timeoutId = setTimeout(function() {
+	timeoutIds[timeoutKey] = setTimeout(function() {
 		//updateTotals(ev);
 		displayReleaseTotals(ev);
 	}, 300);
+	logd('scheduleUpdate curTarget.className=' + timeoutKey + ' new timeoutId=' + timeoutIds[timeoutKey]);
 }
 function updateTotals(ev) {
 	window.console.log('updateTotals ' + new Date() + ' ev=' + ev);
